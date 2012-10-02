@@ -44,4 +44,4 @@ and hit enter.
 
 ###Developer's Guide
 
-The Developer's Guide was created with Doxygen v1.7.5.1 and can be seen by opening \texttt{html/index.htm} in a browser.
+The Developer's Guide was created with Doxygen v1.7.5.1 and can be seen by opening _html/index.htm_ in a browser.
