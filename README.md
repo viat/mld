@@ -1,4 +1,4 @@
-mld - Matchlist Analyzer Daemon
+#mld - Matchlist Analyzer Daemon
 ===============================
 
 The mld (Matchlist Analyzer Daemon) is a background process which check the 'matchlist' table in the database and fills the 'caller\_blacklist' to be able to block a certain caller.
@@ -15,7 +15,6 @@ From here change into _mld/Release/_ and type the following and hit enter to bui
     make clean ; make -j4 all
 
 Where _-j4_ is optional for using four threads while compiling.
-The executable has been created one directory above.
 
 ###Usage
 
