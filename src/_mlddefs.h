@@ -75,8 +75,6 @@ namespace keywords = boost::log::keywords;
 #define NUMDECIMALPLACES	20
 /// Define maximal number of SQL-Parameters
 #define NPARAM				3
-/// Define polling database time
-#define SLEEP				100
 /// Definition of LOCK_FILE for process identification number. Used to make killing of process easier and to allow only one instance of Index Daemon.
 #define LOCK_FILE        	"mld.pid"
 

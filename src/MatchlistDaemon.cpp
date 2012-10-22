@@ -41,6 +41,12 @@ static std::string PID_DIR("");
 /// String for PostgreSQL connection.
 static std::string CONNINFO("");
 
+/// Polling database time
+static long SLEEP(0);
+
+/// How equal calls have to be to get blacklisted (in percent)
+static long BLACKLIST_PERCENT(0);
+
 /**
  * Parse the configuration file.
  * @param configfile Configuration file to be parsed.
@@ -92,6 +98,10 @@ int parseConfig(const std::string &configfile)
 			CONNINFO.erase(0, 1);
 			CONNINFO.erase(CONNINFO.size() - 1, 1);
 		}
+		else if (strcmp(optionnam, "SLEEP") == 0)
+			SLEEP = atoi(optionval);
+		else if (strcmp(optionnam, "BLACKLIST_PERCENT") == 0)
+			BLACKLIST_PERCENT = atoi(optionval);
 		else
 			std::cout << "Wrong option in configuration file: '" << optionnam << "'! Option ignored!" << std::endl;
 
@@ -110,6 +120,18 @@ int parseConfig(const std::string &configfile)
 	if (PID_DIR == "")
 	{
 		std::cerr << "Option 'LOG_DIR' is missing or empty string!" << std::endl;
+		return false;
+	}
+
+	if (SLEEP <= 0)
+	{
+		std::cerr << "Option 'SLEEP' is missing or less equal zero!" << std::endl;
+		return false;
+	}
+
+	if (BLACKLIST_PERCENT <= 0 || BLACKLIST_PERCENT > 100)
+	{
+		std::cerr << "Option 'BLACKLIST_PERCENT' is missing, less equal zero or greater than hundred!" << std::endl;
 		return false;
 	}
 
@@ -276,7 +298,11 @@ static long int dbProcessMatchlist()
 
 	long int i = 0;
 
-	PGresult *res = PQexec(conn, "SELECT call_id, matched_call_id FROM matchlist WHERE processed = -1 ORDER BY call_id, matched_call_id");
+	// build parameter for sql
+	snprintf(pvalue[0], NUMDECIMALPLACES + 1, "%lu", BLACKLIST_PERCENT);
+
+	PGresult *res = PQexecParams(conn, "SELECT call_id, matched_call_id FROM matchlist WHERE processed = -1 AND (actual_mismatches*100)/length_query <= $1 ORDER BY call_id, matched_call_id", 1, NULL,
+			(const char**) pvalue, NULL, NULL, 0);
 	if (PQresultStatus(res) != PGRES_TUPLES_OK)
 	{
 		L_e << "<ERROR> SELECT failed: " << PQerrorMessage(conn);
