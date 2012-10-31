@@ -378,7 +378,7 @@ static long int dbProcessMatchlist()
 
 			// build parameter for sql
 			snprintf(pvalue[0], NUMDECIMALPLACES + 1, "%lu", caller_id);
-			snprintf(pvalue[1], NUMDECIMALPLACES + 1, "%lu", call_id);
+			snprintf(pvalue[1], NUMDECIMALPLACES + 1, "%lu", matched_call_id);
 
 			// delete old entry
 			result = PQexecParams(conn, "DELETE FROM caller_blacklist WHERE caller_id = $1", 1, NULL, (const char**) pvalue, NULL, NULL, 0);
