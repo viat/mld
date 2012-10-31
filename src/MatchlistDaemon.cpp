@@ -318,9 +318,11 @@ static long int dbProcessMatchlist()
 			call_id = (unsigned long int) atoi(PQgetvalue(res, i, 0));
 			matched_call_id = (unsigned long int) atoi(PQgetvalue(res, i, 1));
 
+
+
+			// ------- BLACKLIST CALL_ID ---------
 			// build parameter for sql
 			snprintf(pvalue[0], NUMDECIMALPLACES + 1, "%lu", call_id);
-			snprintf(pvalue[1], NUMDECIMALPLACES + 1, "%lu", matched_call_id);
 
 			result = PQexecParams(conn, "SELECT caller.id FROM caller WHERE caller.id IN (SELECT call.caller_id FROM call WHERE call.id = $1)", 1, NULL,
 					(const char**) pvalue, NULL, NULL, 0);
@@ -356,6 +358,51 @@ static long int dbProcessMatchlist()
 				exit_nicely(conn);
 			}
 			PQclear(result);
+			// ------- END BLACKLIST CALL_ID ---------
+
+
+
+			// ------- BLACKLIST MATCHED_CALL_ID ---------
+			// build parameter for sql
+			snprintf(pvalue[0], NUMDECIMALPLACES + 1, "%lu", matched_call_id);
+
+			result = PQexecParams(conn, "SELECT caller.id FROM caller WHERE caller.id IN (SELECT call.caller_id FROM call WHERE call.id = $1)", 1, NULL,
+					(const char**) pvalue, NULL, NULL, 0);
+			if (PQresultStatus(result) != PGRES_TUPLES_OK)
+			{
+				L_e << "<ERROR> SELECT failed: " << PQerrorMessage(conn);
+				exit_nicely(conn);
+			}
+			caller_id = (unsigned long int) atoi(PQgetvalue(result, 0, 0));
+			PQclear(result);
+
+			// build parameter for sql
+			snprintf(pvalue[0], NUMDECIMALPLACES + 1, "%lu", caller_id);
+			snprintf(pvalue[1], NUMDECIMALPLACES + 1, "%lu", call_id);
+
+			// delete old entry
+			result = PQexecParams(conn, "DELETE FROM caller_blacklist WHERE caller_id = $1", 1, NULL, (const char**) pvalue, NULL, NULL, 0);
+			if (PQresultStatus(result) != PGRES_COMMAND_OK)
+			{
+				L_e << "<ERROR> DELETE failed: " << PQerrorMessage(conn);
+				exit_nicely(conn);
+			}
+			PQclear(result);
+
+			result =
+					PQexecParams(
+							conn,
+							"INSERT INTO caller_blacklist (caller_id, call_id, timestamp, reason) VALUES ( $1, $2, (SELECT CURRENT_TIMESTAMP(0)), (SELECT value FROM config WHERE name = 'viat_blacklist_reason' LIMIT 1) )",
+							2, NULL, (const char**) pvalue, NULL, NULL, 0);
+			if (PQresultStatus(result) != PGRES_COMMAND_OK)
+			{
+				L_e << "<ERROR> INSERT failed: " << PQerrorMessage(conn);
+				exit_nicely(conn);
+			}
+			PQclear(result);
+			// ------- END BLACKLIST MATCHED_CALL_ID ---------
+
+
 
 			// build parameter for sql
 			snprintf(pvalue[0], NUMDECIMALPLACES + 1, "%lu", call_id);
